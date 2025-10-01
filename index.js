@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 require('dotenv').config();
 const port = process.env.PORT || 5000  ;
@@ -72,7 +72,56 @@ app.post('/pets',async(req,res) => {
       console.log('Insert Error:', err);
       res.status(500).json({message:"Error creating pet", error:err});
     }
-})
+});
+
+
+
+// get all pets with filter & pagination
+app.get('/pets', async(req, res)=> {
+    try{
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 8;
+      const species = req.query.species ? req.query.species.toLowerCase() : null;
+      const skip = (page - 1) * limit;
+
+      const filter = {};
+      if(species){
+        filter.species = species;
+
+      }
+
+      const cursor = petCollection.find(filter)
+      .sort({adoptedCount:-1})
+      .skip(skip)
+      .limit(limit);
+      const result = await cursor.toArray();
+      const total = await petCollection.countDocuments(filter);
+      res.json({total, page, limit, data:result});
+    } catch(err){
+      console.log('Read Error:', err);
+      res.status(500).json({message:"Error fetching pets", error:err.message});
+    }
+});
+
+
+
+
+
+// GET single pet
+
+app.get('/pets/:id',async(req,res)=> {
+    try{
+      const id = req.params.id;
+      const pet = await petCollection.findOne({_id:new ObjectId(id)});
+      if(!pet)
+        return res.status(404).json({message:'Pet not found'});
+      res.json(pet);
+    } catch (err){
+      console.log("Read single error:",err);
+      res.status(500).json({message: "Error fetching pet", error:err.message});
+    }
+
+});
 
 
 
