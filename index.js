@@ -125,6 +125,54 @@ app.get('/pets/:id',async(req,res)=> {
 
 
 
+//update pet 
+
+app.put('/pets/:id', async(req,res)=>{
+  try{
+    const id = req.params.id;
+    
+
+     if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+
+
+    const updateData = req.body;
+    const result = await petCollection.findOneAndUpdate(
+      {_id: new ObjectId(id)},
+      {$set: updateData},
+      {returnDocument:"after"}
+    );
+  // console.log(result);
+    if(!result ){
+      return res.status(404).json({message:"Pet not found"});
+    }
+    res.json(result);
+  }catch(err){
+    console.log('Update error:', err);
+    res.status(500).json({message:"Error updating pet", error:err.message});
+  }
+});
+
+
+//Delete pet
+
+app.delete("/pets/:id", async(req,res)=> {
+  try{
+    const id = req.params.id;
+    const result = await petCollection.deleteOne({_id: new ObjectId(id)});
+    if(result.deletedCount === 0)
+      return res.status(404).json({message: "Pet not found"});
+
+    res.json({message: "Pet deleted successfully"});
+  } catch(err){
+    console.log("Delete Error:", err);
+    res.status(500).json({message: "Error deleting pet", error:err.message});
+  }
+});
+
+
+
 // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
